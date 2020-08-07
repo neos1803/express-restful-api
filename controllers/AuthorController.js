@@ -4,7 +4,6 @@ const response = {
     message: "Your Message",
     status: "Success",
     data: [],
-    user: ""
   };
   
 
@@ -44,7 +43,10 @@ class Controller {
 
     static async find(req, res) {
         try {
-            const data =  await models.Author.findByPk(req.params.id, {
+            if (req.params.id != req.user.id) {
+                return res.status(401).json("You are not the user")
+            }
+            const data =  await models.Author.findByPk(req.user.id, {
                 include: [
                     { model: models.Post },
                     { model: models.Comment}
@@ -81,11 +83,15 @@ class Controller {
 
     static async delete(req, res) {
         try {
+            if (req.params.id != req.user.id) {
+                return res.status(401).json("You are not the user")
+            }
             await models.Author.destroy({
                 where: {
-                    id: req.params.id,
+                    id: req.user.id,
                 }   
             })
+            
             response.data = { id : req.params.id }
             response.message = "Data is successfully deleted";
         
