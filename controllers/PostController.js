@@ -9,7 +9,13 @@ const response = {
 class Controller {
     static async create(req, res) {
         try {
-            const data = await models.Post.create(req.body)
+            const data = await models.Post.create({
+                title: req.body.title,
+                content: req.body.content,
+                tags: req.body.tags,
+                status: req.body.status,
+                author_id : req.user.id
+            })
             response.data = data;
             response.message = "Data is successfully created";
         
@@ -42,12 +48,17 @@ class Controller {
 
     static async find(req, res) {
         try {
-            const data = await models.Post.findByPk(req.params.id, {
-                include: [
-                    { model: models.Author },
-                    { model: models.Comment }
-                ]
+            const data = await models.Post.findOne({
+                where: { id: req.params.id, author_id: req.user.id }
             });
+            if (data == null) {
+                response.status = "Fail"
+                response.message = "Data doesn't exist";
+                response.data = data;
+
+                return res.json(response)
+            }
+            response.status = "Success"
             response.data = data;
             response.message = "Data is successfully retrieved";
         
@@ -61,15 +72,28 @@ class Controller {
 
     static async update(req, res) {
         try {
-            await models.Post.update(req.body, {
-                where: {
-                    id: req.params.id,
-                },
-            })
-            response.data = { Post_Id : req.params.id }
-            response.message = "Data is successfully updated";
-        
-            res.status(201).json(response);
+            const data = await models.Post.findOne({
+                where: { id: req.params.id, author_id: req.user.id }
+            });
+            if (data == null) {
+                response.status = "Fail"
+                response.message = "Data doesn't exist";
+                response.data = data;
+
+                return res.status(401).json(response)
+            } else {
+                let obj = req.body;
+                obj.author_id = req.user.id
+                await models.Post.update(obj, {
+                    where: {
+                        id: req.params.id,
+                    },
+                })
+                response.status = "Success"
+                response.message = "Data is successfully updated";
+                res.status(201).json(response);
+            }
+            
         } catch (error) {
             response.status = "Fail",
             response.message = error.message,
@@ -79,15 +103,27 @@ class Controller {
 
     static async delete(req, res) {
         try {
-            await models.Post.destroy({
-                where: {
-                    id: req.params.id,
-                }   
-            })
-            response.data = { id : req.params.id }
-            response.message = "Data is successfully deleted";
-        
-            res.status(201).json(response);
+            const data = await models.Post.findOne({
+                where: { id: req.params.id, author_id: req.user.id }
+            });
+            if (data == null) {
+                response.status = "Fail"
+                response.message = "Data doesn't exist";
+                response.data = data;
+
+                return res.status(401).json(response)
+            } else {
+                await models.Post.destroy({
+                    where: {
+                        id: req.params.id,
+                    }   
+                })
+                response.status = "Success"
+                response.data = { id : req.params.id }
+                response.message = "Data is successfully deleted";
+            
+                res.status(201).json(response);
+            }
         } catch (error) {
             response.status = "Fail",
             response.message = error.message,
