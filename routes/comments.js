@@ -42,7 +42,7 @@ passport.deserializeUser(function(id, cb) {
     });
 });
 
-router.get("/", CommentController.read);
+router.get("/", passport.authenticate("jwt", {session: false}), CommentController.read);
 router.post("/", passport.authenticate("jwt", {session: false}), CommentController.create);
 router.get("/:id", passport.authenticate("jwt", {session: false}), CommentController.find);
 router.patch("/:id", passport.authenticate("jwt", {session: false}), CommentController.update);

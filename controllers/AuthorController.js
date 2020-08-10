@@ -26,8 +26,7 @@ class Controller {
         try {
             const data = await models.Author.findAll({
                 include: [
-                    { model: models.Post },
-                    { model: models.Comment}
+                    { model: models.Post, include: { model: models.Comment } }
                 ]
             });
             response.data = data;
@@ -48,8 +47,7 @@ class Controller {
             }
             const data =  await models.Author.findByPk(req.user.id, {
                 include: [
-                    { model: models.Post },
-                    { model: models.Comment}
+                    { model: models.Post, include: { model: models.Comment } }
                 ]
             })
             response.data = data;
@@ -91,7 +89,7 @@ class Controller {
                     id: req.user.id,
                 }   
             })
-            
+
             response.data = { id : req.params.id }
             response.message = "Data is successfully deleted";
         
