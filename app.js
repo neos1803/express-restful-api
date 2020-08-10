@@ -14,40 +14,40 @@ opts.issuer = 'accounts.examplesoft.com';
 opts.audience = 'yoursite.net';
 const app = express();
 
-// // Passport Strategy
-// passport.use(new Strategy(
-//     function(username, password, cb) {
-//         const user = models.Author.findOne({ where: { username: username, password: password}});
-//         if (!user) { return cb(null, false) }
-//         return cb(null, user)
-//     }
-// ));
+// Passport Strategy
+passport.use(new Strategy(
+    function(username, password, cb) {
+        const user = models.Author.findOne({ where: { username: username, password: password}});
+        if (!user) { return cb(null, false) }
+        return cb(null, user)
+    }
+));
 
 // Jwt Passport Strategy
-// passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
-//     models.Author.findByPk( jwt_payload.id, function (err, user) {
-//         if (err) {
-//             return done(err, false);
-//         }
-//         if (user) {
-//             return done(null, user);
-//         } else {
-//             return done(null, false);
-//             // or you could create a new account
-//         }
-//     });
-// }));
+passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
+    models.Author.findByPk( jwt_payload.id, function (err, user) {
+        if (err) {
+            return done(err, false);
+        }
+        if (user) {
+            return done(null, user);
+        } else {
+            return done(null, false);
+            // or you could create a new account
+        }
+    });
+}));
 
-// passport.serializeUser(function(user, cb) {
-//     cb(null, user.id);
-// });
+passport.serializeUser(function(user, cb) {
+    cb(null, user.id);
+});
   
-// passport.deserializeUser(function(id, cb) {
-//     models.Author.findByPk(id, function (err, user) {
-//       if (err) { return cb(err); }
-//       cb(null, user);
-//     });
-// });
+passport.deserializeUser(function(id, cb) {
+    models.Author.findByPk(id, function (err, user) {
+      if (err) { return cb(err); }
+      cb(null, user);
+    });
+});
 
 const authorRoute = require("./routes/authors");
 const postRoute = require("./routes/posts");
@@ -94,9 +94,9 @@ app.post('/login', async (req, res) => {
   
 });
 
-app.use("/author", authorRoute);
-app.use("/post", postRoute);
-app.use("/comment", commentRoute);
+app.use("/author", passport.authenticate("jwt", {session: false}), authorRoute);
+app.use("/post", passport.authenticate("jwt", {session: false}), postRoute);
+app.use("/comment", passport.authenticate("jwt", {session: false}), commentRoute);
 app.use("/", rootIndex);
 
 app.listen(3000, function(){
