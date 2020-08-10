@@ -79,12 +79,18 @@ app.post('/login', async (req, res) => {
     }
   })
 
-  const token = jsonwebtoken.sign(user.dataValues.username, opts.secretOrKey);
-
-  res.json({
-    status: "Success",
-    token
-  })
+  if (user) {
+    const token = jsonwebtoken.sign(user.dataValues.username, opts.secretOrKey);
+    res.json({
+      status: "Success",
+      token
+    })
+  } else {
+    res.json({
+      status: "Fail",
+      message: "User not found"
+    })
+  }
   
 });
 
