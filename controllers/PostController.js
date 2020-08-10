@@ -1,22 +1,42 @@
 const models = require("../models")
+const cloudinary = require("cloudinary")
+const config = require("../config/cloudinaryConfig")
 
 const response = {
     message: "Your Message",
     status: "Success",
     data: [],
-  };
+};
+
+cloudinary.config(config)
 
 class Controller {
     static async create(req, res) {
+        const imageData = {
+            imageName: req.file.filename,
+            imageUrl: req.file.path
+        }
         try {
+            await cloudinary.uploader.upload(imageData.imageUrl)
+                .then((result) => {
+                    imageData.imageUrl = result.secure_url
+                })
+                .catch((err) => {
+                    return err
+                })
             const data = await models.Post.create({
                 title: req.body.title,
                 content: req.body.content,
+                image: imageData.imageName,
+                imageUrl: imageData.imageUrl,
                 tags: req.body.tags,
                 status: req.body.status,
                 author_id : req.user.id
             })
-            response.data = data;
+            response.data = {
+                title: data.title,
+                content: data.content
+            };
             response.message = "Data is successfully created";
         
             res.status(201).json(response);
