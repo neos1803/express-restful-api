@@ -1,6 +1,8 @@
 const models = require("../models")
 const cloudinary = require("cloudinary")
 const config = require("../config/cloudinaryConfig")
+const fs = require("fs")
+const path = require("path")
 
 const response = {
     message: "Your Message",
@@ -14,12 +16,17 @@ class Controller {
     static async create(req, res) {
         const imageData = {
             imageName: req.file.filename,
-            imageUrl: req.file.path
+            imageUrl: req.file.path,
+            imageId: ""
         }
+        let imagePath = path.join(__dirname, "./../public/images/") + imageData.imageName
         try {
+            console.log(imagePath)
             await cloudinary.uploader.upload(imageData.imageUrl)
                 .then((result) => {
-                    imageData.imageUrl = result.secure_url
+                    fs.unlinkSync(imagePath)
+                    imageData.imageUrl = result.secure_url;
+                    imageData.imageId = result.public_id;
                 })
                 .catch((err) => {
                     return err
@@ -29,6 +36,7 @@ class Controller {
                 content: req.body.content,
                 image: imageData.imageName,
                 imageUrl: imageData.imageUrl,
+                imagePublicId: imageData.imageId,
                 tags: req.body.tags,
                 status: req.body.status,
                 author_id : req.user.id
@@ -133,6 +141,7 @@ class Controller {
 
                 return res.status(401).json(response)
             } else {
+                await cloudinary.uploader.destroy(data.dataValues.imagePublicId)
                 await models.Post.destroy({
                     where: {
                         id: req.params.id,
