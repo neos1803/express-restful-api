@@ -6,36 +6,38 @@ const Strategy = require("passport-local").Strategy;
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 const models = require("./models")
+const path = require("path")
+require('dotenv').config();
+
 
 let opts = {}
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = 'secret';
-opts.issuer = 'accounts.examplesoft.com';
-opts.audience = 'yoursite.net';
+// opts.issuer = 'accounts.examplesoft.com';
+// opts.audience = 'yoursite.net';
 const app = express();
 
 // Passport Strategy
-passport.use(new Strategy(
-    function(username, password, cb) {
-        const user = models.Author.findOne({ where: { username: username, password: password}});
-        if (!user) { return cb(null, false) }
-        return cb(null, user)
-    }
-));
+// passport.use(new Strategy(
+//     function(username, password, cb) {
+//         const user = models.Author.findOne({ where: { username: username, password: password}});
+//         if (!user) { return cb(null, false) }
+//         return cb(null, user)
+//     }
+// ));
 
 // Jwt Passport Strategy
 passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
-    models.Author.findByPk( jwt_payload.id, function (err, user) {
-        if (err) {
-            return done(err, false);
-        }
-        if (user) {
-            return done(null, user);
-        } else {
-            return done(null, false);
-            // or you could create a new account
-        }
-    });
+  models.Author.findOne({
+      where: {
+          username: jwt_payload
+      }
+  })
+  .then((data) => {
+      const user = data.dataValues;
+      return done(null, user)
+  })
+  .catch((err) => { return done(err, false) })
 }));
 
 passport.serializeUser(function(user, cb) {
@@ -58,11 +60,11 @@ const rootIndex = require("./routes/index");
 app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
-
 app.use(require('express-session')({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
-
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 app.get('/login',
   function(req, res){
@@ -91,7 +93,6 @@ app.post('/login', async (req, res) => {
       message: "User not found"
     })
   }
-  
 });
 
 app.use("/author", passport.authenticate("jwt", {session: false}), authorRoute);
