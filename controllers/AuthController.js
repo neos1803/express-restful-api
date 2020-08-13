@@ -6,6 +6,7 @@ const cron = require("node-cron")
 const mustache = require("mustache")
 const fs = require("fs")
 const template = require("../helper/template")
+const pdfkit = require("pdfkit")
 
 const response = {
     message: "Your Message",
@@ -16,11 +17,33 @@ const response = {
 
 class Controller {
     static async create(req, res) {
-        const imagePath = path.join(__dirname, "./asset/image/image.jpg")
+        // const imagePath = path.join(__dirname, "./asset/image/image.jpg")
 
         try {
             const data = await models.Author.create(req.body);
-            await Controller.sendEmail(data);
+            const pdf = new pdfkit({
+                size: "LEGAl",
+                info: {
+                    title: "This is Title",
+                    Author: "This is Author"
+                }
+            });
+            pdf.text(`
+                Hello ${data.dataValues.username}!
+                Here is your full credential:
+                Username: ${data.dataValues.username}
+                Profile: ${data.dataValues.profile}
+                Email: ${data.dataValues.email}
+            `)
+            pdf.pipe(
+                fs.createWriteStream(`././asset/pdf/welcome_${data.dataValues.username}.pdf`)
+            )
+                .on("finish", function () {
+                    console.log("PDF finished")
+                });
+            pdf.end();
+            const pdfPath = `././asset/pdf/welcome_${data.dataValues.username}.pdf`
+            await Controller.sendEmail(data, pdfPath);
             response.data = data;
             response.message = "Data is successfully created";
             res.status(201).json(response);
@@ -30,7 +53,7 @@ class Controller {
             res.status(400).json(response)
         }
     }
-    static async sendEmail(data) {
+    static async sendEmail(data, attach) {
         const task = cron.schedule("01 * * * *", function() {
             sendEmail().then(console.log("email has been sent"))
         })
@@ -44,8 +67,8 @@ class Controller {
             }),
             attachments: [{
                 filename: "Attachment",
-                path: "././asset/image/image.jpg",
-                contentType: "image/jpg"
+                path: attach,
+                contentType: "application/pdf"
             }]
         }
         transporter.sendMail(mailOptions)
