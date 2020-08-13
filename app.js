@@ -54,6 +54,7 @@ passport.deserializeUser(function(id, cb) {
 const authorRoute = require("./routes/authors");
 const postRoute = require("./routes/posts");
 const commentRoute = require("./routes/comments");
+const authRoute = require("./routes/auth");
 const rootIndex = require("./routes/index");
 
 // Body Parser middleware
@@ -98,6 +99,7 @@ app.post('/login', async (req, res) => {
 app.use("/author", passport.authenticate("jwt", {session: false}), authorRoute);
 app.use("/post", passport.authenticate("jwt", {session: false}), postRoute);
 app.use("/comment", passport.authenticate("jwt", {session: false}), commentRoute);
+app.use("/auth", authRoute);
 app.use("/", rootIndex);
 
 app.listen(3000, function(){
